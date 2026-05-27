@@ -1,0 +1,187 @@
+
+<style>
+.ctrl { display:flex; flex-wrap:wrap; gap:8px; margin:1rem 0; align-items:center; }
+.btn { font-size:12px; padding:4px 10px; border-radius:6px; border:0.5px solid var(--color-border-secondary); background:var(--color-background-primary); color:var(--color-text-secondary); cursor:pointer; }
+.btn.active { background:var(--color-background-info); color:var(--color-text-info); border-color:transparent; }
+.leg { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--color-text-secondary); margin-bottom:8px; }
+.leg span { display:flex; align-items:center; gap:4px; }
+.leg b { width:10px; height:10px; border-radius:2px; display:inline-block; }
+</style>
+
+<h2 class="sr-only">2019年を基準とした都道府県別合計特殊出生率の変化率（2019〜2024年）</h2>
+
+<div class="ctrl" id="btns"></div>
+<div class="leg" id="leg"></div>
+<div style="position:relative;width:100%;height:420px;">
+  <canvas id="ch" role="img" aria-label="2019年基準の都道府県別合計特殊出生率変化率 2019年から2024年">2019年を100%とした各都道府県の合計特殊出生率変化率の推移。</canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const years = [2019,2020,2021,2022,2023,2024];
+
+const raw = [
+  {name:'北海道',region:'北海道・東北',base:1.24,data:[1.24,1.21,1.20,1.12,1.06,1.01]},
+  {name:'青森',region:'北海道・東北',base:1.38,data:[1.38,1.33,1.31,1.24,1.23,1.14]},
+  {name:'岩手',region:'北海道・東北',base:1.35,data:[1.35,1.32,1.30,1.21,1.16,1.09]},
+  {name:'宮城',region:'北海道・東北',base:1.23,data:[1.23,1.20,1.15,1.09,1.07,1.00]},
+  {name:'秋田',region:'北海道・東北',base:1.33,data:[1.33,1.24,1.22,1.18,1.10,1.04]},
+  {name:'山形',region:'北海道・東北',base:1.40,data:[1.40,1.37,1.32,1.32,1.22,1.17]},
+  {name:'福島',region:'北海道・東北',base:1.47,data:[1.47,1.39,1.36,1.27,1.21,1.15]},
+  {name:'茨城',region:'関東',base:1.39,data:[1.39,1.34,1.30,1.27,1.22,1.16]},
+  {name:'栃木',region:'関東',base:1.40,data:[1.40,1.39,1.31,1.24,1.19,1.15]},
+  {name:'群馬',region:'関東',base:1.40,data:[1.40,1.39,1.35,1.32,1.25,1.20]},
+  {name:'埼玉',region:'関東',base:1.27,data:[1.27,1.27,1.22,1.17,1.14,1.09]},
+  {name:'千葉',region:'関東',base:1.28,data:[1.28,1.27,1.21,1.18,1.14,1.09]},
+  {name:'東京',region:'関東',base:1.15,data:[1.15,1.12,1.08,1.04,0.99,0.96]},
+  {name:'神奈川',region:'関東',base:1.28,data:[1.28,1.26,1.22,1.17,1.13,1.08]},
+  {name:'新潟',region:'中部',base:1.38,data:[1.38,1.33,1.32,1.27,1.23,1.14]},
+  {name:'富山',region:'中部',base:1.42,data:[1.42,1.36,1.32,1.27,1.22,1.15]},
+  {name:'石川',region:'中部',base:1.48,data:[1.48,1.39,1.37,1.30,1.29,1.22]},
+  {name:'福井',region:'中部',base:1.56,data:[1.56,1.56,1.57,1.50,1.46,1.46]},
+  {name:'山梨',region:'中部',base:1.44,data:[1.44,1.48,1.43,1.40,1.32,1.26]},
+  {name:'長野',region:'中部',base:1.57,data:[1.57,1.46,1.44,1.43,1.34,1.30]},
+  {name:'岐阜',region:'中部',base:1.45,data:[1.45,1.42,1.40,1.36,1.31,1.27]},
+  {name:'静岡',region:'中部',base:1.44,data:[1.44,1.39,1.36,1.33,1.25,1.19]},
+  {name:'愛知',region:'中部',base:1.45,data:[1.45,1.44,1.41,1.35,1.29,1.22]},
+  {name:'三重',region:'近畿',base:1.47,data:[1.47,1.42,1.43,1.40,1.29,1.24]},
+  {name:'滋賀',region:'近畿',base:1.47,data:[1.47,1.50,1.46,1.43,1.38,1.32]},
+  {name:'京都',region:'近畿',base:1.25,data:[1.25,1.26,1.22,1.18,1.11,1.05]},
+  {name:'大阪',region:'近畿',base:1.31,data:[1.31,1.31,1.27,1.22,1.19,1.14]},
+  {name:'兵庫',region:'近畿',base:1.41,data:[1.41,1.39,1.36,1.31,1.29,1.23]},
+  {name:'奈良',region:'近畿',base:1.31,data:[1.31,1.28,1.30,1.25,1.21,1.19]},
+  {name:'和歌山',region:'近畿',base:1.46,data:[1.46,1.43,1.43,1.39,1.33,1.24]},
+  {name:'鳥取',region:'中国・四国',base:1.63,data:[1.63,1.52,1.51,1.60,1.44,1.43]},
+  {name:'島根',region:'中国・四国',base:1.68,data:[1.68,1.60,1.62,1.57,1.46,1.43]},
+  {name:'岡山',region:'中国・四国',base:1.47,data:[1.47,1.48,1.45,1.39,1.32,1.27]},
+  {name:'広島',region:'中国・四国',base:1.49,data:[1.49,1.48,1.42,1.40,1.33,1.29]},
+  {name:'山口',region:'中国・四国',base:1.56,data:[1.56,1.48,1.49,1.47,1.40,1.36]},
+  {name:'徳島',region:'中国・四国',base:1.46,data:[1.46,1.48,1.44,1.42,1.36,1.32]},
+  {name:'香川',region:'中国・四国',base:1.59,data:[1.59,1.47,1.51,1.45,1.40,1.36]},
+  {name:'愛媛',region:'中国・四国',base:1.46,data:[1.46,1.40,1.40,1.39,1.31,1.28]},
+  {name:'高知',region:'中国・四国',base:1.47,data:[1.47,1.43,1.45,1.36,1.30,1.25]},
+  {name:'福岡',region:'九州・沖縄',base:1.44,data:[1.44,1.41,1.37,1.33,1.26,1.22]},
+  {name:'佐賀',region:'九州・沖縄',base:1.64,data:[1.64,1.59,1.56,1.53,1.46,1.41]},
+  {name:'長崎',region:'九州・沖縄',base:1.66,data:[1.66,1.61,1.60,1.57,1.49,1.39]},
+  {name:'熊本',region:'九州・沖縄',base:1.60,data:[1.60,1.60,1.59,1.52,1.47,1.39]},
+  {name:'大分',region:'九州・沖縄',base:1.53,data:[1.53,1.55,1.54,1.49,1.39,1.37]},
+  {name:'宮崎',region:'九州・沖縄',base:1.73,data:[1.73,1.65,1.64,1.63,1.49,1.43]},
+  {name:'鹿児島',region:'九州・沖縄',base:1.63,data:[1.63,1.61,1.65,1.54,1.48,1.38]},
+  {name:'沖縄',region:'九州・沖縄',base:1.82,data:[1.82,1.83,1.80,1.70,1.60,1.54]},
+];
+
+const natBase = 1.36;
+const natData = [1.36,1.33,1.30,1.26,1.20,1.15];
+
+const regions = ['全国','北海道・東北','関東','中部','近畿','中国・四国','九州・沖縄'];
+const rColors = {
+  '北海道・東北':'#378ADD',
+  '関東':'#D85A30',
+  '中部':'#1D9E75',
+  '近畿':'#7F77DD',
+  '中国・四国':'#BA7517',
+  '九州・沖縄':'#D4537E',
+};
+
+let cur = '全国';
+let ci = null;
+
+function chgRate(arr, base) {
+  return arr.map(v => parseFloat(((v/base-1)*100).toFixed(2)));
+}
+
+function getDS(region) {
+  const filtered = region === '全国' ? raw : raw.filter(d => d.region === region);
+  const ds = filtered.map(d => ({
+    label: d.name,
+    data: chgRate(d.data, d.base),
+    borderColor: rColors[d.region],
+    backgroundColor: 'transparent',
+    borderWidth: 1.2,
+    pointRadius: 0,
+    tension: 0.3,
+  }));
+  ds.unshift({
+    label: '全国平均',
+    data: chgRate(natData, natBase),
+    borderColor: '#2C2C2A',
+    backgroundColor: 'transparent',
+    borderWidth: 2.5,
+    pointRadius: 3,
+    tension: 0.3,
+  });
+  return ds;
+}
+
+function buildLeg(region) {
+  const el = document.getElementById('leg');
+  const items = region === '全国'
+    ? Object.entries(rColors).map(([r,c]) => `<span><b style="background:${c}"></b>${r}</span>`).join('')
+    : `<span><b style="background:${rColors[region]}"></b>${region}各県</span>`;
+  el.innerHTML = items + `<span><b style="background:#2C2C2A"></b>全国平均</span>`;
+}
+
+function buildChart(region) {
+  const ctx = document.getElementById('ch').getContext('2d');
+  if (ci) ci.destroy();
+  ci = new Chart(ctx, {
+    type: 'line',
+    data: { labels: years, datasets: getDS(region) },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: c => {
+              const v = c.parsed.y;
+              return `${c.dataset.label}: ${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color:'#888780', font:{size:12}, autoSkip:false },
+          grid: { color:'rgba(136,135,128,0.15)' }
+        },
+        y: {
+          ticks: {
+            color:'#888780', font:{size:12},
+            callback: v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%'
+          },
+          grid: { color:'rgba(136,135,128,0.15)' },
+          afterDataLimits(scale) {
+            scale.max = Math.max(scale.max, 2);
+            scale.min = Math.min(scale.min, -22);
+          }
+        }
+      }
+    }
+  });
+}
+
+function buildBtns() {
+  const c = document.getElementById('btns');
+  regions.forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'btn' + (r === cur ? ' active' : '');
+    b.textContent = r;
+    b.onclick = () => {
+      cur = r;
+      document.querySelectorAll('.btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      buildLeg(r);
+      buildChart(r);
+    };
+    c.appendChild(b);
+  });
+}
+
+buildBtns();
+buildLeg(cur);
+buildChart(cur);
+</script>
